@@ -1,6 +1,13 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql//localhost:3306/weather?serverTimezone=UTC&characterEncoding=UTF-8
+#    url: jdbc:mysql//localhost:3306/weather?serverTimezone=UTC&characterEncoding=UTF-8
     username: hoe
     password: bitch
+    url: jdbc:mysql://localhost:3306/weather?serverTimezone=UTC&characterEncoding=UTF-8
+
+  jpa:
+    show-sql: true
+    database: mysql
+    hibernate:
+      ddl-auto: update
