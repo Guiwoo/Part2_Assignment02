@@ -3,6 +3,8 @@ package com.guiwoo.weather.controller;
 import com.guiwoo.weather.domain.Diary;
 import com.guiwoo.weather.service.DiaryService;
 
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +19,6 @@ public class DiaryController {
     public DiaryController(DiaryService diaryService) {
         this.diaryService = diaryService;
     }
-
 
     @PostMapping("/create/diary")
     public void createDiary(
@@ -35,8 +36,10 @@ public class DiaryController {
 
     @GetMapping("/read/diaries")
     List<Diary> readDiaries(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @ApiParam(value="조회할 기간의 첫번째날",example = "2022-09-11") LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @ApiParam(value="조회할 기간의 마지막날",example = "2022-09-11") LocalDate endDate
     ){
         return diaryService.readDiaries(startDate,endDate);
     }

@@ -1,7 +1,10 @@
 package com.guiwoo.weather.service;
 
+import com.guiwoo.weather.Part2Assignment02Application;
 import com.guiwoo.weather.domain.DateWeather;
 import com.guiwoo.weather.domain.Diary;
+import com.guiwoo.weather.error.DateErrorCode;
+import com.guiwoo.weather.error.DateException;
 import com.guiwoo.weather.repository.DateWeatherRepository;
 import com.guiwoo.weather.repository.DiaryRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -9,10 +12,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,6 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.guiwoo.weather.error.DateErrorCode.DATE_FUTURE_ERROR;
+import static com.guiwoo.weather.error.DateErrorCode.DATE_PAST_ERROR;
+
 @Service
 @Slf4j
 @Transactional
@@ -33,6 +43,7 @@ public class DiaryService {
     private final DateWeatherRepository weatherRepository;
     @Value("${openweather.key}")
     private String apiKey;
+    private static final Logger logger = LoggerFactory.getLogger(Part2Assignment02Application.class);
 
     public DiaryService(DiaryRepository diaryRepository,DateWeatherRepository dt) {
         this.diaryRepository = diaryRepository;
@@ -57,6 +68,8 @@ public class DiaryService {
         return d;
     }
     public void createDiary(LocalDate date, String text) {
+        logger.info("Started to created diary");
+        validDateCheck(date);
         //db 에서가져오기 vs api 에서 가져오기
         DateWeather d = getDateWeather(date);
 
@@ -66,9 +79,11 @@ public class DiaryService {
         diary.setText(text);
 
         diaryRepository.save(diary);
+        logger.info("End to created diary");
     }
 
     private DateWeather getDateWeather(LocalDate date) {
+        validDateCheck(date);
         List<DateWeather> lb= weatherRepository.findAllByDate(date);
         if(lb.size() == 0){
             //api에서 새로 가져 와야 하는데 현재 날씨를 가져오도록
@@ -80,10 +95,14 @@ public class DiaryService {
 
     @Transactional(readOnly = true)
     public List<Diary> readDiary(LocalDate date){
+        logger.debug("Debuting diary");
+        validDateCheck(date);
         return diaryRepository.findAllByDate(date);
     }
     @Transactional(readOnly = true)
     public List<Diary> readDiaries(LocalDate start,LocalDate end){
+        validDateCheck(start);
+        validDateCheck(end);
         return diaryRepository.findAllByDateBetween(start,end);
     }
     public void deleteDiary(LocalDate date){
@@ -91,6 +110,7 @@ public class DiaryService {
     }
 
     public void updateDiary(LocalDate date,String text){
+        validDateCheck(date);
         Diary nD = diaryRepository.getFirstByDate(date).orElseThrow(()-> new RuntimeException("없어요"));
         nD.setText(text);
     }
@@ -138,5 +158,16 @@ public class DiaryService {
         map.put("icon",obj.get("icon"));
 
         return map;
+    }
+
+    private void validDateCheck(LocalDate date){
+        if(date.isAfter(LocalDate.now())){
+            log.error(DATE_FUTURE_ERROR.getHttpStatus().value() +" "+ DATE_FUTURE_ERROR.getMessage());
+            throw new DateException(DATE_FUTURE_ERROR);
+        }
+        if(date.isBefore(LocalDate.ofYearDay(1990,1))){
+            log.error(DATE_PAST_ERROR.getHttpStatus().value() +" "+ DATE_PAST_ERROR.getMessage());
+            throw new DateException(DATE_PAST_ERROR);
+        }
     }
 }
